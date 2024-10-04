@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">PersonTest</string>
     <string name="client_name">Client Name</string>
+    <string name="coordinate">Coordinates</string>
 </resources>

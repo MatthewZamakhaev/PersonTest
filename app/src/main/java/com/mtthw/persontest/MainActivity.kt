@@ -1,5 +1,6 @@
 package com.mtthw.persontest
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -7,7 +8,12 @@ import androidx.lifecycle.lifecycleScope
 import com.mtthw.persontest.data.ClientIntent
 import com.mtthw.persontest.data.ClientViewState
 import com.mtthw.persontest.databinding.ActivityMainBinding
+import com.mtthw.persontest.location.GMSLocationService
+import com.mtthw.persontest.location.HMSLocationService
+import com.mtthw.persontest.location.LocationService
+import com.mtthw.persontest.location.ServiceChecker
 import kotlinx.coroutines.launch
+import android.location.Location
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,8 +30,45 @@ class MainActivity : AppCompatActivity() {
                 render(state)
             }
         }
-
         viewModel.handleIntent(ClientIntent.LoadClient)
+
+        val locationService = getLocationService(this)
+        locationService.getLastLocation { location ->
+            updateLocation(location)
+        }
+    }
+
+    private fun updateLocation(location: Location?) {
+        if (location != null) {
+            val latitude = location.latitude
+            val longitude = location.longitude
+            binding.coordinates.text = "Lat: $latitude, Lon: $longitude"
+        } else {
+            binding.coordinates.text = "Location not available"
+        }
+    }
+
+    private fun getLocationService(context: Context): LocationService {
+        return if (ServiceChecker.isGMSAvailable(context)) {
+            GMSLocationService(context)
+        } else if (ServiceChecker.isHMSAvailable(context)) {
+            HMSLocationService(context)
+        } else {
+            throw UnsupportedOperationException("No supported location service available")
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == 1001 || requestCode == 1002) {
+            val locationService = getLocationService(this)
+            locationService.getLastLocation { location ->
+                updateLocation(location)
+            }
+        }
     }
 
     private fun render(state: ClientViewState) {
